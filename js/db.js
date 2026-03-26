@@ -3,7 +3,7 @@
 // ============================================
 
 const DB_NAME = 'MaterialApp';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 // 径間マスタ（そうろう橋・固定）
 const SPANS = [
@@ -29,7 +29,7 @@ const DEFAULT_MATERIALS = [
     unit: 'セット',
     packSize: 1,
     isTwoComponent: true,
-    mixRatio: { base: 2, hardener: 1 },
+    mixRatio: { base: 4, hardener: 1 },
     mixRatioUnit: '重量比',
     standardUsage: null,  // kg/㎡ — 後日入力
     defaultMargin: 1.1,
@@ -115,17 +115,14 @@ function openDB() {
   });
 }
 
+// マスタデータを最新で上書き（DB_VERSIONを上げたら自動反映）
+// イベントログ（搬入・混合・使用の記録）には影響しない
 async function initMaterials() {
   const d = await openDB();
   const tx = d.transaction('materials', 'readwrite');
   const store = tx.objectStore('materials');
   for (const m of DEFAULT_MATERIALS) {
-    const existing = await new Promise(r => {
-      const req = store.get(m.id);
-      req.onsuccess = () => r(req.result);
-      req.onerror = () => r(null);
-    });
-    if (!existing) store.put(m);
+    store.put(m);
   }
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
