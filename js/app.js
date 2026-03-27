@@ -254,7 +254,7 @@ async function renderReceipt() {
         </div>
         <div id="r-lot-fields">
           <div class="form-group">
-            <input type="text" class="form-input" data-lot-index="0" placeholder="ロット番号 #1" oninput="receiptLotInput()">
+            <input type="text" class="form-input form-input-lot" data-lot-index="0" placeholder="ロット番号 #1" oninput="receiptLotInput()">
           </div>
         </div>
       </div>
@@ -301,7 +301,7 @@ function receiptUpdateLotFields() {
   for (let i = 0; i < qty; i++) {
     const val = values[i] || '';
     html += `<div class="form-group" style="margin-bottom:${i < qty - 1 ? '10' : '0'}px">
-      <input type="text" class="form-input" data-lot-index="${i}"
+      <input type="text" class="form-input form-input-lot" data-lot-index="${i}"
              placeholder="ロット番号 #${i + 1}" value="${val}" oninput="receiptLotInput()">
     </div>`;
   }
@@ -328,7 +328,7 @@ function receiptFillAllLots() {
 function receiptGetLots() {
   const fields = document.querySelectorAll('#r-lot-fields input[data-lot-index]');
   const lots = [];
-  fields.forEach(f => lots.push(f.value.trim()));
+  fields.forEach(f => lots.push(f.value.trim().toUpperCase()));
   return lots;
 }
 
@@ -428,7 +428,7 @@ async function renderMixing() {
       <div class="card card-padded">
         <div class="form-group">
           <label class="form-label">ロット番号</label>
-          <input type="text" class="form-input" id="m-lot" placeholder="ロット番号">
+          <input type="text" class="form-input form-input-lot" id="m-lot" placeholder="ロット番号">
         </div>
         <div class="form-group">
           <label class="form-label">主剤 (g)</label>
@@ -499,7 +499,7 @@ async function mixCheck() {
 }
 
 async function mixSubmit() {
-  const lot = document.getElementById('m-lot').value.trim();
+  const lot = document.getElementById('m-lot').value.trim().toUpperCase();
   await addMixingEvent(
     wizardState.materialId, lot,
     wizardState.baseWeight, wizardState.hardenerWeight,
@@ -511,7 +511,7 @@ async function mixSubmit() {
   const materials = await getMaterials();
   const mat = materials.find(m => m.id === wizardState.materialId);
   if (mat && mat.potLife) {
-    startPotLifeTimer(mat, document.getElementById('m-lot').value.trim(), wizardState.spanId, wizardState.process);
+    startPotLifeTimer(mat, lot, wizardState.spanId, wizardState.process);
   }
 
   navigateTo('home');

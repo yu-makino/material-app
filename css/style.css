@@ -496,6 +496,10 @@ main::-webkit-scrollbar {
   font-weight: 400;
 }
 
+.form-input-lot {
+  text-transform: uppercase;
+}
+
 /* 全て同じボタン */
 .btn-same-lot {
   background: var(--accent-glow);

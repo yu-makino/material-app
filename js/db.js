@@ -42,6 +42,7 @@ const DEFAULT_MATERIALS = [
     name: 'エポサームプライマー',
     unit: 'セット',
     packSize: 15,  // 1セット=15kg（主剤+硬化剤）
+    packBreakdown: { base: 12, hardener: 3 },  // XPS-400: 主剤12kg+硬化剤3kg
     isTwoComponent: true,
     mixRatio: { base: 4, hardener: 1 },
     mixRatioUnit: '重量比',
