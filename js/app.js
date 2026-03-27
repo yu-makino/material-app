@@ -735,11 +735,14 @@ async function renderLog() {
   const materials = await getMaterials();
   const matMap = {};
   for (const m of materials) matMap[m.id] = m;
+  const reversedIds = await getReversedEventIds();
 
   const el = document.getElementById('screen-log');
-  const sorted = events.sort((a, b) => b.eventId - a.eventId);
+  // reversal以外のイベントを表示（reversalは元イベントの打ち消し線で表現）
+  const displayEvents = events.filter(e => e.type !== 'reversal');
+  const sorted = displayEvents.sort((a, b) => b.eventId - a.eventId);
 
-  let html = `<div class="section-title">操作ログ（${events.length}件）</div>`;
+  let html = `<div class="section-title">操作ログ（${displayEvents.length}件）</div>`;
 
   if (sorted.length === 0) {
     html += '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">まだ記録がありません</div></div>';
@@ -752,6 +755,7 @@ async function renderLog() {
     const matName = mat ? mat.name.replace('エポサーム', '') : ev.materialId;
     const date = ev.date || '';
     const time = ev.timestamp ? new Date(ev.timestamp).toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '';
+    const isReversed = reversedIds.has(ev.eventId);
 
     if (date !== lastDate) {
       html += `<div class="log-date-header">${date}</div>`;
@@ -759,32 +763,93 @@ async function renderLog() {
     }
 
     let content = '';
-    const badge = ev.type === 'receipt' ? '搬入' : ev.type === 'mixing' ? '混合' : '使用';
+    let badge = '';
 
     switch (ev.type) {
       case 'receipt':
+        badge = '搬入';
         content = `${matName} ${ev.quantity}${mat?.unit || ''} — ロット: ${ev.lotNumber}`;
         break;
       case 'mixing':
+        badge = '混合';
         content = `${matName} 主剤${ev.baseWeight}g / 硬化剤${ev.hardenerWeight}g → ${ev.result}　[${ev.spanId} ${ev.process}]`;
         break;
       case 'usage':
+        badge = '使用';
         content = `${matName} ${ev.quantity}${mat?.unit || ''}　[${ev.spanId} ${ev.process}]`;
         break;
+      case 'temperature':
+        badge = '気温';
+        content = `${ev.temperature}°C`;
+        break;
+      default:
+        badge = ev.type;
+        content = JSON.stringify(ev);
     }
 
+    const reversedClass = isReversed ? ' reversed' : '';
+    const reversalBtn = isReversed
+      ? '<span class="log-reversed-label">取り消し済み</span>'
+      : `<button class="log-reversal-btn" onclick="reverseEvent(${ev.eventId})">取り消し</button>`;
+
     html += `
-      <div class="log-entry">
+      <div class="log-entry${reversedClass}">
         <div class="log-entry-header">
           <span class="log-badge ${ev.type}">${badge}</span>
           <span class="log-time">${time}</span>
         </div>
         <div class="log-body">${content}</div>
+        <div class="log-entry-footer">${reversalBtn}</div>
       </div>
     `;
   }
 
   el.innerHTML = html;
+}
+
+// ログからイベントを取り消す
+async function reverseEvent(eventId) {
+  const events = await getEvents();
+  const original = events.find(e => e.eventId === eventId);
+  if (!original) { showToast('イベントが見つかりません'); return; }
+
+  const materials = await getMaterials();
+  const mat = materials.find(m => m.id === original.materialId);
+  const matName = mat ? mat.name.replace('エポサーム', '') : '';
+  const badge = original.type === 'receipt' ? '搬入' : original.type === 'mixing' ? '混合' : '使用';
+
+  // 確認モーダル
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  content.innerHTML = `
+    <div class="modal-title">取り消し確認</div>
+    <div class="modal-desc">以下の記録を取り消しますか？</div>
+    <div class="confirm-card" style="margin:12px 0">
+      <div class="confirm-row"><span class="confirm-row-label">種類</span><span class="confirm-row-value">${badge}</span></div>
+      <div class="confirm-row"><span class="confirm-row-label">材料</span><span class="confirm-row-value">${matName}</span></div>
+      ${original.lotNumber ? `<div class="confirm-row"><span class="confirm-row-label">ロット</span><span class="confirm-row-value">${original.lotNumber}</span></div>` : ''}
+      ${original.quantity ? `<div class="confirm-row"><span class="confirm-row-label">数量</span><span class="confirm-row-value">${original.quantity}${mat?.unit || ''}</span></div>` : ''}
+    </div>
+    <button class="btn btn-danger" onclick="confirmReversal(${eventId})" style="width:100%">取り消す</button>
+    <button class="btn btn-ghost mt-8" onclick="closeModal()" style="width:100%">キャンセル</button>
+  `;
+  overlay.classList.remove('hidden');
+  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+async function confirmReversal(eventId) {
+  const events = await getEvents();
+  const original = events.find(e => e.eventId === eventId);
+  if (!original) return;
+
+  await addReversalEvent(eventId, original);
+  closeModal();
+  showToast('取り消しました');
+  renderLog();
 }
 
 // ============================================

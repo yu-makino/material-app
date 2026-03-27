@@ -949,6 +949,57 @@ main::-webkit-scrollbar {
   font-weight: 400;
 }
 
+.log-entry-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.log-reversal-btn {
+  background: transparent;
+  border: 1px solid var(--separator);
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.log-reversal-btn:active {
+  background: rgba(255, 59, 48, 0.15);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.log-entry.reversed {
+  opacity: 0.45;
+}
+
+.log-entry.reversed .log-body {
+  text-decoration: line-through;
+}
+
+.log-reversed-label {
+  font-size: 11px;
+  color: var(--danger);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+}
+
+.modal-desc {
+  font-size: 14px;
+  color: var(--text-sub);
+  margin-bottom: 8px;
+}
+
 /* ============================================
    日報
    ============================================ */

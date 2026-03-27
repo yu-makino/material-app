@@ -3,7 +3,7 @@
 // ============================================
 
 const DB_NAME = 'MaterialApp';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 // 径間マスタ（そうろう橋・固定）
 const SPANS = [
@@ -282,6 +282,29 @@ async function addUsageEvent(materialId, lotNumber, quantity, spanId, process, n
   });
 }
 
+// 取り消しイベント（元イベントを相殺する補正イベント）
+async function addReversalEvent(originalEventId, originalEvent) {
+  return addEvent({
+    type: 'reversal',
+    originalEventId,
+    originalType: originalEvent.type,
+    materialId: originalEvent.materialId,
+    lotNumber: originalEvent.lotNumber,
+    quantity: originalEvent.quantity || 0,
+    baseWeight: originalEvent.baseWeight || 0,
+    hardenerWeight: originalEvent.hardenerWeight || 0,
+    spanId: originalEvent.spanId || null,
+    process: originalEvent.process || null,
+    notes: '取り消し'
+  });
+}
+
+// 取り消し済みイベントIDの一覧を取得
+async function getReversedEventIds() {
+  const reversals = await getEvents({ type: 'reversal' });
+  return new Set(reversals.map(r => r.originalEventId));
+}
+
 // 気温記録イベント
 async function addTemperatureEvent(temperature, notes) {
   return addEvent({
@@ -330,11 +353,12 @@ async function getEvents(filter = {}) {
   });
 }
 
-// 在庫計算（搬入 − 使用 = 残数）
+// 在庫計算（搬入 − 使用 = 残数）※取り消し済みイベントを除外
 async function getInventory() {
   const materials = await getMaterials();
   const receipts = await getEvents({ type: 'receipt' });
   const usages = await getEvents({ type: 'usage' });
+  const reversedIds = await getReversedEventIds();
 
   const inventory = {};
   for (const m of materials) {
@@ -349,6 +373,7 @@ async function getInventory() {
 
   for (const r of receipts) {
     if (!inventory[r.materialId]) continue;
+    if (reversedIds.has(r.eventId)) continue;  // 取り消し済みはスキップ
     inventory[r.materialId].totalReceived += r.quantity;
     if (!inventory[r.materialId].lots[r.lotNumber]) {
       inventory[r.materialId].lots[r.lotNumber] = { received: 0, used: 0 };
@@ -358,6 +383,7 @@ async function getInventory() {
 
   for (const u of usages) {
     if (!inventory[u.materialId]) continue;
+    if (reversedIds.has(u.eventId)) continue;  // 取り消し済みはスキップ
     inventory[u.materialId].totalUsed += u.quantity;
     if (inventory[u.materialId].lots[u.lotNumber]) {
       inventory[u.materialId].lots[u.lotNumber].used += u.quantity;
@@ -375,18 +401,20 @@ async function getInventory() {
   return inventory;
 }
 
-// 日次サマリー
+// 日次サマリー（取り消し済みイベントを除外）
 async function getDailySummary(date) {
   const events = await getEvents({ date });
   const materials = await getMaterials();
   const matMap = {};
   for (const m of materials) matMap[m.id] = m;
+  const reversedIds = await getReversedEventIds();
+  const active = events.filter(e => !reversedIds.has(e.eventId) && e.type !== 'reversal');
 
   return {
     date,
-    receipts: events.filter(e => e.type === 'receipt'),
-    mixings: events.filter(e => e.type === 'mixing'),
-    usages: events.filter(e => e.type === 'usage'),
+    receipts: active.filter(e => e.type === 'receipt'),
+    mixings: active.filter(e => e.type === 'mixing'),
+    usages: active.filter(e => e.type === 'usage'),
     materialMap: matMap
   };
 }
