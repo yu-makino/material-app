@@ -356,7 +356,7 @@ async function receiptToConfirm() {
     <div class="confirm-row"><span class="confirm-row-label">材料</span><span class="confirm-row-value">${mat.name}</span></div>
     <div class="confirm-row"><span class="confirm-row-label">合計数量</span><span class="confirm-row-value">${wizardState.quantity} ${mat.unit}</span></div>
     <div style="border-top:0.5px solid var(--separator); margin-top:8px; padding-top:8px">
-      <div style="font-size:12px; color:var(--text-sub); font-weight:600; letter-spacing:0.5px; margin-bottom:8px;">ロット内訳</div>
+      <div style="font-size:15px; color:var(--text-sub); font-weight:600; letter-spacing:0.5px; margin-bottom:8px;">ロット内訳</div>
       ${lotHtml}
     </div>
   `;

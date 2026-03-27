@@ -144,17 +144,14 @@ header {
 }
 
 header h1 {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.3px;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-light);
 }
 
 .header-subtitle {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-sub);
   text-align: center;
   padding-bottom: 10px;
@@ -240,7 +237,7 @@ main::-webkit-scrollbar {
 }
 
 .tab-label {
-  font-size: 10px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.3px;
 }
@@ -259,7 +256,7 @@ main::-webkit-scrollbar {
    ============================================ */
 
 .section-title {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-sub);
   text-transform: uppercase;
@@ -277,10 +274,7 @@ main::-webkit-scrollbar {
 }
 
 .screen-title .gradient {
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-light);
 }
 
 /* ============================================
@@ -308,7 +302,7 @@ main::-webkit-scrollbar {
 
 .card-header {
   padding: 14px 18px 10px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-sub);
   letter-spacing: 1.2px;
@@ -461,7 +455,7 @@ main::-webkit-scrollbar {
 
 .form-label {
   display: block;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-sub);
   margin-bottom: 8px;
@@ -507,7 +501,7 @@ main::-webkit-scrollbar {
   border: 1px solid rgba(56, 97, 251, 0.2);
   border-radius: 20px;
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 0.3px;
@@ -568,14 +562,11 @@ main::-webkit-scrollbar {
   font-weight: 800;
   line-height: 1;
   letter-spacing: -2px;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-light);
 }
 
 .stepper-unit {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text-sub);
   margin-top: 4px;
   font-weight: 600;
@@ -632,7 +623,7 @@ main::-webkit-scrollbar {
   border-radius: 13px;
   background: var(--accent-gradient-2);
   color: #fff;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -728,7 +719,7 @@ main::-webkit-scrollbar {
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-sub);
   margin-top: 8px;
   font-weight: 600;
@@ -737,10 +728,7 @@ main::-webkit-scrollbar {
 }
 
 .stat-card.accent .stat-number {
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-light);
 }
 
 /* クイックアクション */
@@ -850,7 +838,7 @@ main::-webkit-scrollbar {
 }
 
 .inv-lots {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text-sub);
   margin-top: 4px;
   line-height: 1.5;
@@ -867,14 +855,11 @@ main::-webkit-scrollbar {
   font-weight: 800;
   line-height: 1;
   letter-spacing: -2px;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-light);
 }
 
 .inv-unit {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-sub);
   margin-top: 4px;
   font-weight: 600;
@@ -886,7 +871,7 @@ main::-webkit-scrollbar {
    ============================================ */
 
 .log-date-header {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-sub);
   padding: 16px 4px 8px;
@@ -916,7 +901,7 @@ main::-webkit-scrollbar {
   align-items: center;
   padding: 3px 10px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.3px;
 }
@@ -937,7 +922,7 @@ main::-webkit-scrollbar {
 }
 
 .log-time {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text-dim);
   font-weight: 500;
 }
@@ -959,7 +944,7 @@ main::-webkit-scrollbar {
   background: transparent;
   border: 1px solid var(--separator);
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: 15px;
   padding: 4px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -981,7 +966,7 @@ main::-webkit-scrollbar {
 }
 
 .log-reversed-label {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--danger);
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -1009,7 +994,7 @@ main::-webkit-scrollbar {
 }
 
 .report-group-title {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-sub);
   margin-bottom: 8px;
@@ -1064,7 +1049,7 @@ main::-webkit-scrollbar {
 }
 
 .confirm-title {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-sub);
   font-weight: 700;
   margin-bottom: 18px;
@@ -1125,7 +1110,7 @@ main::-webkit-scrollbar {
 }
 
 .widget-row-value {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--text-sub);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -1164,7 +1149,7 @@ main::-webkit-scrollbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
   color: #fff;
   flex-shrink: 0;
@@ -1184,7 +1169,7 @@ main::-webkit-scrollbar {
 }
 
 .widget-activity-detail {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text2);
   white-space: nowrap;
@@ -1193,7 +1178,7 @@ main::-webkit-scrollbar {
 }
 
 .widget-activity-time {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text-dim);
   font-weight: 500;
   flex-shrink: 0;
@@ -1249,7 +1234,7 @@ main::-webkit-scrollbar {
 }
 
 .usage-lot-remaining {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text-sub);
   margin-top: 2px;
   font-weight: 500;
@@ -1269,7 +1254,7 @@ main::-webkit-scrollbar {
   background: linear-gradient(135deg, #FF3D71, #FF6B6B);
   border: none;
   color: #fff;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.1s;
@@ -1288,7 +1273,7 @@ main::-webkit-scrollbar {
   background: var(--surface2);
   border: 1px solid var(--glass-border);
   color: var(--text2);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.1s;
@@ -1416,14 +1401,11 @@ main::-webkit-scrollbar {
 .text-accent { color: var(--accent-light); }
 .text-success { color: var(--success); }
 .text-danger { color: var(--danger); }
-.text-sm { font-size: 13px; }
+.text-sm { font-size: 16px; }
 .font-bold { font-weight: 700; }
 
 .gradient-text {
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-light);
 }
 
 /* ============================================
@@ -1447,7 +1429,7 @@ main::-webkit-scrollbar {
   background: var(--surface2);
   border: 1px solid var(--glass-border);
   color: var(--text2);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -1486,7 +1468,7 @@ main::-webkit-scrollbar {
 }
 
 .field-temp-note {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text-dim);
   margin-left: auto;
 }
@@ -1549,7 +1531,7 @@ main::-webkit-scrollbar {
   background: var(--surface2);
   border: none;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1609,7 +1591,7 @@ main::-webkit-scrollbar {
 }
 
 .timer-meta {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text-sub);
   font-weight: 500;
 }
