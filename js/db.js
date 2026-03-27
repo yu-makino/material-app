@@ -3,7 +3,7 @@
 // ============================================
 
 const DB_NAME = 'MaterialApp';
-const DB_VERSION = 2;
+const DB_VERSION = 5;
 
 // 径間マスタ（そうろう橋・固定）
 const SPANS = [
@@ -12,40 +12,55 @@ const SPANS = [
   'P13-P14', 'P14-P15', 'P15-P16', 'P16-P17'
 ];
 
-// 工程マスタ
+// 設計数量（炭素繊維シート貼り付け面積 m²）
+const DESIGN_AREAS = {
+  'P1-P2': 346.6,
+  'P2-P3': 357.5,
+  'P3-P4': 357.5,
+  'P4-P5': 346.6
+};
+
+// 工程マスタ（作業手順書ベース14工程）
 const PROCESSES = [
   'プライマー塗布',
-  'パテ整形',
+  'パテ不陸整正',
   '含浸接着樹脂（下塗り）',
   '炭素繊維シート貼付',
-  '含浸接着樹脂（上塗り）'
+  '含浸接着樹脂（上塗り）',
+  'CFアンカー',
+  '表面仕上げプライマー',
+  '表面保護材',
+  '珪砂吹き付け'
 ];
 
-// 材料マスタ（仮データ — 後日ユーザーが標準使用量等を提供）
+// 材料マスタ（物理的な製品単位 = 搬入・混合の単位）
+// 標準使用量はウェブ標準値、kg/m²
 const DEFAULT_MATERIALS = [
   {
     id: 'primer',
+    sortOrder: 1,
     name: 'エポサームプライマー',
     unit: 'セット',
-    packSize: 1,
+    packSize: 15,  // 1セット=15kg（主剤+硬化剤）
     isTwoComponent: true,
     mixRatio: { base: 4, hardener: 1 },
     mixRatioUnit: '重量比',
-    standardUsage: null,  // kg/㎡ — 後日入力
+    standardUsage: 0.2,
     defaultMargin: 1.1,
-    potLife: 40,  // 可使時間（分）— 仮値、後日確認
-    hazardClass: null,    // 後日入力
+    potLife: 40,  // 仮値
+    hazardClass: null,
     designatedQty: null
   },
   {
     id: 'putty',
+    sortOrder: 2,
     name: 'エポサームパテ',
     unit: 'セット',
     packSize: 1,
     isTwoComponent: true,
     mixRatio: { base: 2, hardener: 1 },
     mixRatioUnit: '重量比',
-    standardUsage: null,
+    standardUsage: 1.0,
     defaultMargin: 1.1,
     potLife: 30,  // 仮値
     hazardClass: null,
@@ -53,13 +68,14 @@ const DEFAULT_MATERIALS = [
   },
   {
     id: 'resin',
+    sortOrder: 3,
     name: 'エポサームレジン',
     unit: 'セット',
     packSize: 1,
     isTwoComponent: true,
-    mixRatio: { base: 2, hardener: 1 },
+    mixRatio: { base: 2, hardener: 1 },  // 仮値・要確認
     mixRatioUnit: '重量比',
-    standardUsage: null,
+    standardUsage: 1.7,  // 全工程合計
     defaultMargin: 1.1,
     potLife: 50,  // 仮値
     hazardClass: null,
@@ -67,6 +83,7 @@ const DEFAULT_MATERIALS = [
   },
   {
     id: 'cf_sheet',
+    sortOrder: 4,
     name: '炭素繊維シート',
     unit: '巻',
     packSize: 1,
@@ -77,8 +94,53 @@ const DEFAULT_MATERIALS = [
     defaultMargin: 1.0,
     hazardClass: null,
     designatedQty: null
+  },
+  {
+    id: 'primer_finish',
+    sortOrder: 5,
+    name: '仕上げプライマー',
+    unit: 'セット',
+    packSize: 1,
+    isTwoComponent: true,
+    mixRatio: { base: 4, hardener: 1 },  // 要確認
+    mixRatioUnit: '重量比',
+    standardUsage: 0.1,
+    defaultMargin: 1.1,
+    potLife: 40,  // 仮値
+    hazardClass: null,
+    designatedQty: null
+  },
+  {
+    id: 'mortar',
+    sortOrder: 6,
+    name: '表面保護モルタル',
+    unit: 'kg',
+    packSize: 1,
+    isTwoComponent: false,
+    mixRatio: null,
+    mixRatioUnit: null,
+    standardUsage: 1.4,
+    defaultMargin: 1.1,
+    potLife: null,
+    hazardClass: null,
+    designatedQty: null
   }
 ];
+
+// 工程別の標準使用量（計算用）
+// 搬入・混合は材料マスタ単位、使用量計算は工程別に算出
+const PROCESS_USAGE = {
+  'プライマー塗布':       { materialId: 'primer',         usage: 0.2 },
+  'パテ不陸整正':         { materialId: 'putty',          usage: 1.0 },
+  '含浸接着樹脂（下塗り）': { materialId: 'resin',          usage: 0.5 },
+  '炭素繊維シート貼付':    { materialId: 'cf_sheet',       usage: null },
+  '含浸接着樹脂（上塗り）': { materialId: 'resin',          usage: 0.3 },
+  'CFアンカー下塗り':      { materialId: 'resin',          usage: 0.3 },
+  'CFアンカー上塗り':      { materialId: 'resin',          usage: 0.2 },
+  '表面仕上げプライマー':   { materialId: 'primer_finish',  usage: 0.1 },
+  '表面保護材':           { materialId: 'mortar',          usage: 1.4 },
+  '珪砂吹き付け':         { materialId: 'resin',          usage: 0.4 }
+};
 
 let db = null;
 
@@ -121,9 +183,19 @@ async function initMaterials() {
   const d = await openDB();
   const tx = d.transaction('materials', 'readwrite');
   const store = tx.objectStore('materials');
-  for (const m of DEFAULT_MATERIALS) {
-    store.put(m);
-  }
+  // 旧バージョンの不要な材料を削除してから最新を投入
+  const validIds = new Set(DEFAULT_MATERIALS.map(m => m.id));
+  const allReq = store.getAll();
+  allReq.onsuccess = () => {
+    for (const existing of allReq.result) {
+      if (!validIds.has(existing.id)) {
+        store.delete(existing.id);
+      }
+    }
+    for (const m of DEFAULT_MATERIALS) {
+      store.put(m);
+    }
+  };
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
@@ -135,7 +207,7 @@ async function getMaterials() {
   return new Promise((resolve, reject) => {
     const tx = d.transaction('materials', 'readonly');
     const req = tx.objectStore('materials').getAll();
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => resolve(req.result.sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99)));
     req.onerror = () => reject(req.error);
   });
 }
