@@ -739,22 +739,185 @@ async function renderInventory() {
 // ログ画面
 // ============================================
 
+let analysisTab = 'span'; // 'span' | 'env' | 'log'
+
 async function renderLog() {
+  const el = document.getElementById('screen-log');
+  el.innerHTML = `
+    <div class="analysis-tabs">
+      <button class="analysis-tab ${analysisTab === 'span' ? 'active' : ''}" onclick="switchAnalysis('span')">径間別</button>
+      <button class="analysis-tab ${analysisTab === 'env' ? 'active' : ''}" onclick="switchAnalysis('env')">温湿度</button>
+      <button class="analysis-tab ${analysisTab === 'log' ? 'active' : ''}" onclick="switchAnalysis('log')">ログ</button>
+    </div>
+    <div id="analysis-content"></div>
+  `;
+  await renderAnalysisContent();
+}
+
+function switchAnalysis(tab) {
+  analysisTab = tab;
+  document.querySelectorAll('.analysis-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.analysis-tab[onclick="switchAnalysis('${tab}')"]`).classList.add('active');
+  renderAnalysisContent();
+}
+
+async function renderAnalysisContent() {
+  const el = document.getElementById('analysis-content');
+  switch (analysisTab) {
+    case 'span': el.innerHTML = await renderSpanAnalysis(); break;
+    case 'env': el.innerHTML = await renderEnvAnalysis(); break;
+    case 'log': el.innerHTML = await renderLogEntries(); break;
+  }
+}
+
+// --- 径間別分析 ---
+async function renderSpanAnalysis() {
+  const events = await getEvents();
+  const materials = await getMaterials();
+  const matMap = {};
+  for (const m of materials) matMap[m.id] = m;
+  const reversedIds = await getReversedEventIds();
+  const active = events.filter(e => !reversedIds.has(e.eventId) && e.type !== 'reversal');
+
+  // 径間ごとに集計
+  const spanData = {};
+  for (const s of SPANS) {
+    spanData[s] = { receipts: {}, usages: {}, mixings: 0 };
+  }
+  // 搬入は径間なし → 全体集計
+  const totalReceipt = {};
+  const totalUsage = {};
+
+  for (const ev of active) {
+    const matId = ev.materialId;
+    if (!matId) continue;
+    const unit = matMap[matId]?.unit || '';
+
+    if (ev.type === 'receipt') {
+      totalReceipt[matId] = (totalReceipt[matId] || 0) + ev.quantity;
+    }
+    if (ev.type === 'usage' && ev.spanId) {
+      if (!spanData[ev.spanId]) spanData[ev.spanId] = { receipts: {}, usages: {}, mixings: 0 };
+      spanData[ev.spanId].usages[matId] = (spanData[ev.spanId].usages[matId] || 0) + ev.quantity;
+      totalUsage[matId] = (totalUsage[matId] || 0) + ev.quantity;
+    }
+    if (ev.type === 'mixing' && ev.spanId) {
+      if (!spanData[ev.spanId]) spanData[ev.spanId] = { receipts: {}, usages: {}, mixings: 0 };
+      spanData[ev.spanId].mixings++;
+    }
+  }
+
+  let html = '';
+
+  // 全体サマリー
+  html += '<div class="section-title mt-16">全体サマリー</div><div class="glass-card">';
+  const allMatIds = [...new Set([...Object.keys(totalReceipt), ...Object.keys(totalUsage)])];
+  if (allMatIds.length === 0) {
+    html += '<div class="stat-inv-empty">データなし</div>';
+  } else {
+    html += '<table class="analysis-table"><thead><tr><th>材料</th><th>搬入</th><th>使用</th><th>残</th></tr></thead><tbody>';
+    for (const matId of allMatIds) {
+      const mat = matMap[matId];
+      const name = mat ? mat.name.replace('エポサーム', '') : matId;
+      const unit = mat?.unit || '';
+      const recv = totalReceipt[matId] || 0;
+      const used = totalUsage[matId] || 0;
+      html += `<tr><td>${name}</td><td>${recv} ${unit}</td><td>${used} ${unit}</td><td class="analysis-remain">${recv - used} ${unit}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  // 径間別
+  const activeSpans = SPANS.filter(s => Object.keys(spanData[s].usages).length > 0 || spanData[s].mixings > 0);
+  if (activeSpans.length > 0) {
+    html += '<div class="section-title mt-24">径間別使用状況</div>';
+    for (const span of activeSpans) {
+      const d = spanData[span];
+      html += `<div class="glass-card" style="margin-bottom:10px"><div class="analysis-span-title">${span}</div>`;
+      html += '<table class="analysis-table"><thead><tr><th>材料</th><th>使用量</th><th>混合</th></tr></thead><tbody>';
+      const matIds = Object.keys(d.usages);
+      for (const matId of matIds) {
+        const mat = matMap[matId];
+        const name = mat ? mat.name.replace('エポサーム', '') : matId;
+        const unit = mat?.unit || '';
+        html += `<tr><td>${name}</td><td>${d.usages[matId]} ${unit}</td><td>—</td></tr>`;
+      }
+      if (matIds.length === 0) {
+        html += `<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">使用記録なし</td></tr>`;
+      }
+      html += `</tbody></table><div class="analysis-span-meta">混合回数: ${d.mixings}回</div></div>`;
+    }
+  }
+
+  return html;
+}
+
+// --- 温湿度分析 ---
+async function renderEnvAnalysis() {
+  const tempEvents = await getEvents({ type: 'temperature' });
+  const reversedIds = await getReversedEventIds();
+  const active = tempEvents.filter(e => !reversedIds.has(e.eventId)).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+  if (active.length === 0) {
+    return '<div class="empty-state mt-24"><div class="empty-icon">🌡</div><div class="empty-text">温湿度記録がありません</div></div>';
+  }
+
+  // 日付ごとにグループ化
+  const byDate = {};
+  for (const e of active) {
+    const d = e.date || '';
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(e);
+  }
+
+  let html = '';
+  for (const [date, events] of Object.entries(byDate)) {
+    const temps = events.map(e => e.temperature);
+    const hums = events.filter(e => e.humidity != null).map(e => e.humidity);
+    const minT = Math.min(...temps), maxT = Math.max(...temps);
+    const avgT = (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1);
+
+    html += `<div class="glass-card" style="margin-bottom:10px">`;
+    html += `<div class="analysis-span-title">${date}</div>`;
+    html += `<div class="env-summary">`;
+    html += `<span>気温: ${minT}〜${maxT}℃（平均${avgT}℃）</span>`;
+    if (hums.length > 0) {
+      const minH = Math.min(...hums), maxH = Math.max(...hums);
+      html += `<span>湿度: ${minH}〜${maxH}%</span>`;
+    }
+    html += `<span>測定${events.length}回</span>`;
+    html += `</div>`;
+
+    html += '<table class="analysis-table"><thead><tr><th>時刻</th><th>気温</th><th>湿度</th><th></th></tr></thead><tbody>';
+    for (const e of events) {
+      const time = e.timestamp ? new Date(e.timestamp).toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '';
+      const humStr = e.humidity != null ? `${e.humidity}%` : '—';
+      const photoBtn = e.photo ? `<span class="field-temp-photo" onclick="showPhoto(this)" data-src="${e.photo}">📷</span>` : '';
+      html += `<tr><td>${time}</td><td>${e.temperature}℃</td><td>${humStr}</td><td>${photoBtn}</td></tr>`;
+    }
+    html += '</tbody></table></div>';
+  }
+
+  return html;
+}
+
+// --- 操作ログ ---
+async function renderLogEntries() {
   const events = await getEvents();
   const materials = await getMaterials();
   const matMap = {};
   for (const m of materials) matMap[m.id] = m;
   const reversedIds = await getReversedEventIds();
 
-  const el = document.getElementById('screen-log');
-  // reversal以外のイベントを表示（reversalは元イベントの打ち消し線で表現）
   const displayEvents = events.filter(e => e.type !== 'reversal');
   const sorted = displayEvents.sort((a, b) => b.eventId - a.eventId);
 
-  let html = `<div class="section-title">操作ログ（${displayEvents.length}件）</div>`;
+  let html = `<div class="section-title mt-16">操作ログ（${displayEvents.length}件）</div>`;
 
   if (sorted.length === 0) {
     html += '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">まだ記録がありません</div></div>';
+    return html;
   }
 
   let lastDate = '';
@@ -813,7 +976,7 @@ async function renderLog() {
     `;
   }
 
-  el.innerHTML = html;
+  return html;
 }
 
 // ログからイベントを取り消す
