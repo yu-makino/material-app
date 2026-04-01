@@ -732,6 +732,54 @@ main::-webkit-scrollbar {
   color: var(--accent-light);
 }
 
+/* 足場内在庫ワイドカード */
+.stat-card-wide {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card-wide::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(107, 138, 255, 0.2), transparent);
+}
+.stat-card-wide .stat-label {
+  font-size: 13px;
+  color: var(--text-sub);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+.stat-inv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stat-inv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+.stat-inv-row span:last-child {
+  color: var(--accent-light);
+  font-weight: 800;
+  font-size: 16px;
+}
+.stat-inv-empty {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
 /* クイックアクション */
 .action-list {
   display: flex;
@@ -1410,8 +1458,95 @@ main::-webkit-scrollbar {
 }
 
 /* ============================================
-   現場タブ — 気温記録 + タイマー
+   現場タブ — 温湿度記録 + タイマー
    ============================================ */
+
+.field-env-row {
+  display: flex;
+  gap: 16px;
+}
+.field-env-col {
+  flex: 1;
+  text-align: center;
+}
+.field-env-label {
+  font-size: 13px;
+  color: var(--text-sub);
+  font-weight: 600;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+.stepper-compact .stepper-number {
+  font-size: 28px;
+}
+.stepper-compact .stepper-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+}
+
+.field-photo-section {
+  margin-top: 16px;
+  text-align: center;
+}
+.field-photo-btn {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.field-photo-btn:active {
+  background: var(--accent-glow);
+  transform: scale(0.95);
+}
+.field-photo-preview {
+  margin-top: 10px;
+}
+.field-photo-preview img {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+}
+.field-temp-photo {
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* 写真オーバーレイ */
+.photo-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.photo-overlay-img {
+  max-width: 95%;
+  max-height: 90vh;
+  border-radius: 10px;
+}
+.photo-overlay-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  cursor: pointer;
+}
 
 .field-temp-input {
   margin-bottom: 4px;
@@ -1420,7 +1555,7 @@ main::-webkit-scrollbar {
 .field-temp-fine {
   display: flex;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 10px;
   justify-content: center;
 }
 

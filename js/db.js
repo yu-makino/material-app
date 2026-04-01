@@ -307,11 +307,13 @@ async function getReversedEventIds() {
   return new Set(reversals.map(r => r.originalEventId));
 }
 
-// 気温記録イベント
-async function addTemperatureEvent(temperature, notes) {
+// 気温・湿度記録イベント
+async function addTemperatureEvent(temperature, humidity, photoDataUrl, notes) {
   return addEvent({
     type: 'temperature',
     temperature: Number(temperature),
+    humidity: humidity != null ? Number(humidity) : null,
+    photo: photoDataUrl || null,
     notes: notes || ''
   });
 }

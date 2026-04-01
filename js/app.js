@@ -119,27 +119,18 @@ async function renderHome() {
   const today = new Date().toISOString().slice(0, 10);
   const summary = await getDailySummary(today);
   const inventory = await getInventory();
-  const totalRemaining = Object.values(inventory).reduce((s, v) => s + v.remaining, 0);
+
+  // 足場内在庫を材料別に集計
+  const invItems = Object.values(inventory).filter(v => v.totalReceived > 0 || v.remaining !== 0);
+  const invHtml = invItems.length > 0
+    ? invItems.map(v => `<div class="stat-inv-row"><span>${v.material.name.replace('エポサーム', '')}</span><span>${v.remaining} ${v.material.unit}</span></div>`).join('')
+    : '<div class="stat-inv-empty">搬入データなし</div>';
 
   const el = document.getElementById('screen-home');
   el.innerHTML = `
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-number">${summary.receipts.length}</div>
-        <div class="stat-label">搬入</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${summary.mixings.length}</div>
-        <div class="stat-label">混合</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${summary.usages.length}</div>
-        <div class="stat-label">使用</div>
-      </div>
-      <div class="stat-card accent">
-        <div class="stat-number">${totalRemaining}</div>
-        <div class="stat-label">在庫合計</div>
-      </div>
+    <div class="stat-card-wide">
+      <div class="stat-label">足場内在庫（搬入 − 使用）</div>
+      <div class="stat-inv-list">${invHtml}</div>
     </div>
 
     <div class="section-title">アクション</div>
@@ -794,11 +785,11 @@ async function renderLog() {
         break;
       case 'usage':
         badge = '使用';
-        content = `${matName} ${ev.quantity}${mat?.unit || ''}　[${ev.spanId} ${ev.process}]`;
+        content = `${matName} ${ev.quantity}${mat?.unit || ''} — ロット: ${ev.lotNumber}　[${ev.spanId} ${ev.process}]`;
         break;
       case 'temperature':
-        badge = '気温';
-        content = `${ev.temperature}°C`;
+        badge = '温湿度';
+        content = `${ev.temperature}°C` + (ev.humidity != null ? ` / ${ev.humidity}%` : '');
         break;
       default:
         badge = ev.type;
@@ -975,6 +966,8 @@ async function copyReport() {
 // ============================================
 
 let fieldTemperature = 20;
+let fieldHumidity = 50;
+let fieldPhotoData = null;
 let activeTimers = []; // { id, material, lotNumber, spanId, process, startTime, potLifeMin }
 let timerInterval = null;
 
@@ -1031,27 +1024,49 @@ async function renderField() {
   el.innerHTML = `
     ${renderTimerSectionHTML()}
 
-    <div class="section-title ${activeTimers.length > 0 ? 'mt-24' : ''}">気温記録</div>
+    <div class="section-title ${activeTimers.length > 0 ? 'mt-24' : ''}">温湿度記録</div>
     <div class="glass-card">
-      <div class="field-temp-input">
-        <div class="stepper">
-          <button class="stepper-btn" onclick="fieldTempChange(-1)">−</button>
-          <div class="stepper-value">
-            <div class="stepper-number" id="field-temp-display">${fieldTemperature}</div>
-            <div class="stepper-unit">℃</div>
+      <div class="field-env-row">
+        <div class="field-env-col">
+          <div class="field-env-label">気温</div>
+          <div class="stepper stepper-compact">
+            <button class="stepper-btn" onclick="fieldTempChange(-1)">−</button>
+            <div class="stepper-value">
+              <div class="stepper-number" id="field-temp-display">${fieldTemperature}</div>
+              <div class="stepper-unit">℃</div>
+            </div>
+            <button class="stepper-btn" onclick="fieldTempChange(1)">+</button>
           </div>
-          <button class="stepper-btn" onclick="fieldTempChange(1)">+</button>
+          <div class="field-temp-fine">
+            <button class="field-fine-btn" onclick="fieldTempChange(-0.5)">-0.5</button>
+            <button class="field-fine-btn" onclick="fieldTempChange(0.5)">+0.5</button>
+          </div>
         </div>
-        <div class="field-temp-fine">
-          <button class="field-fine-btn" onclick="fieldTempChange(-0.5)">-0.5</button>
-          <button class="field-fine-btn" onclick="fieldTempChange(-5)">-5</button>
-          <button class="field-fine-btn" onclick="fieldTempChange(5)">+5</button>
-          <button class="field-fine-btn" onclick="fieldTempChange(0.5)">+0.5</button>
+        <div class="field-env-col">
+          <div class="field-env-label">湿度</div>
+          <div class="stepper stepper-compact">
+            <button class="stepper-btn" onclick="fieldHumChange(-5)">−</button>
+            <div class="stepper-value">
+              <div class="stepper-number" id="field-hum-display">${fieldHumidity}</div>
+              <div class="stepper-unit">%</div>
+            </div>
+            <button class="stepper-btn" onclick="fieldHumChange(5)">+</button>
+          </div>
+          <div class="field-temp-fine">
+            <button class="field-fine-btn" onclick="fieldHumChange(-1)">-1</button>
+            <button class="field-fine-btn" onclick="fieldHumChange(1)">+1</button>
+          </div>
         </div>
       </div>
+      <div class="field-photo-section">
+        <label class="field-photo-btn" id="field-photo-label">
+          <input type="file" accept="image/*" capture="environment" onchange="fieldPhotoSelected(this)" style="display:none">
+          ${fieldPhotoData ? '写真を変更' : '温湿度計の写真を撮影'}
+        </label>
+        ${fieldPhotoData ? '<div class="field-photo-preview"><img id="field-photo-img" src="' + fieldPhotoData + '" alt="温湿度計"></div>' : ''}
+      </div>
       <button class="btn btn-accent mt-16" onclick="recordTemperature()" style="width:100%">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-3px;margin-right:6px"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-        気温を記録
+        記録する
       </button>
     </div>
 
@@ -1060,9 +1075,11 @@ async function renderField() {
       <div class="glass-card">
         ${tempEvents.map(e => {
           const time = new Date(e.timestamp).toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+          const humStr = e.humidity != null ? ` / ${e.humidity}%` : '';
           return `<div class="field-temp-row">
             <span class="field-temp-time">${time}</span>
-            <span class="field-temp-val">${e.temperature}℃</span>
+            <span class="field-temp-val">${e.temperature}℃${humStr}</span>
+            ${e.photo ? '<span class="field-temp-photo" onclick="showPhoto(this)" data-src="' + e.photo + '">📷</span>' : ''}
             ${e.notes ? `<span class="field-temp-note">${e.notes}</span>` : ''}
           </div>`;
         }).join('')}
@@ -1142,9 +1159,48 @@ function fieldTempChange(delta) {
   if (display) display.textContent = fieldTemperature;
 }
 
+function fieldHumChange(delta) {
+  fieldHumidity = Math.max(0, Math.min(100, fieldHumidity + delta));
+  const display = document.getElementById('field-hum-display');
+  if (display) display.textContent = fieldHumidity;
+}
+
+function fieldPhotoSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // リサイズして保存（IndexedDBの容量を考慮）
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxW = 800;
+      const scale = Math.min(1, maxW / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      fieldPhotoData = canvas.toDataURL('image/jpeg', 0.7);
+      renderField();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showPhoto(el) {
+  const src = el.dataset.src;
+  if (!src) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'photo-overlay';
+  overlay.innerHTML = `<img src="${src}" class="photo-overlay-img"><button class="photo-overlay-close" onclick="this.parentElement.remove()">✕</button>`;
+  document.body.appendChild(overlay);
+}
+
 async function recordTemperature() {
-  await addTemperatureEvent(fieldTemperature);
-  showToast(`${fieldTemperature}℃ を記録しました`);
+  await addTemperatureEvent(fieldTemperature, fieldHumidity, fieldPhotoData);
+  const humStr = fieldHumidity != null ? ` / ${fieldHumidity}%` : '';
+  showToast(`${fieldTemperature}℃${humStr} を記録しました`);
+  fieldPhotoData = null;
   renderField();
 }
 
