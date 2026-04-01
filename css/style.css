@@ -1584,11 +1584,27 @@ main::-webkit-scrollbar {
 .field-photo-preview {
   margin-top: 10px;
 }
+.field-photo-preview {
+  position: relative;
+  display: inline-block;
+}
 .field-photo-preview img {
   max-width: 100%;
   max-height: 150px;
   border-radius: 10px;
   border: 1px solid var(--glass-border);
+}
+.field-photo-remove {
+  display: block;
+  margin: 8px auto 0;
+  background: var(--surface2);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--danger, #ff5252);
+  cursor: pointer;
 }
 .field-temp-photo {
   cursor: pointer;

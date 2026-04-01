@@ -1226,7 +1226,7 @@ async function renderField() {
           <input type="file" accept="image/*" capture="environment" onchange="fieldPhotoSelected(this)" style="display:none">
           ${fieldPhotoData ? '写真を変更' : '温湿度計の写真を撮影'}
         </label>
-        ${fieldPhotoData ? '<div class="field-photo-preview"><img id="field-photo-img" src="' + fieldPhotoData + '" alt="温湿度計"></div>' : ''}
+        ${fieldPhotoData ? '<div class="field-photo-preview"><img id="field-photo-img" src="' + fieldPhotoData + '" alt="温湿度計"><button class="field-photo-remove" onclick="fieldPhotoRemove()">破棄</button></div>' : ''}
       </div>
       <button class="btn btn-accent mt-16" onclick="recordTemperature()" style="width:100%">
         記録する
@@ -1348,6 +1348,11 @@ function fieldPhotoSelected(input) {
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+function fieldPhotoRemove() {
+  fieldPhotoData = null;
+  renderField();
 }
 
 function showPhoto(el) {
