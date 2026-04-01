@@ -494,6 +494,7 @@ main::-webkit-scrollbar {
   text-transform: uppercase;
 }
 
+
 /* 全て同じボタン */
 .btn-same-lot {
   background: var(--accent-glow);

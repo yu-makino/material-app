@@ -57,7 +57,8 @@ const DEFAULT_MATERIALS = [
     sortOrder: 2,
     name: 'エポサームパテ',
     unit: 'セット',
-    packSize: 1,
+    packSize: 15,  // 1セット=15kg（主剤+硬化剤）
+    packBreakdown: { base: 10, hardener: 5 },  // 主剤10kg+硬化剤5kg
     isTwoComponent: true,
     mixRatio: { base: 2, hardener: 1 },
     mixRatioUnit: '重量比',
@@ -72,9 +73,10 @@ const DEFAULT_MATERIALS = [
     sortOrder: 3,
     name: 'エポサームレジン',
     unit: 'セット',
-    packSize: 1,
+    packSize: 15,  // 1セット=15kg（主剤+硬化剤）
+    packBreakdown: { base: 12, hardener: 3 },  // 主剤12kg+硬化剤3kg
     isTwoComponent: true,
-    mixRatio: { base: 2, hardener: 1 },  // 仮値・要確認
+    mixRatio: { base: 4, hardener: 1 },
     mixRatioUnit: '重量比',
     standardUsage: 1.7,  // 全工程合計
     defaultMargin: 1.1,
@@ -417,6 +419,25 @@ async function getDailySummary(date) {
     usages: active.filter(e => e.type === 'usage'),
     materialMap: matMap
   };
+}
+
+// 直近のロット番号を取得（材料別、新しい順、最大5件）
+async function getRecentLotNumbers(materialId) {
+  const events = await getEvents({ materialId });
+  const reversedIds = await getReversedEventIds();
+  const seen = new Map(); // lotNumber -> latest timestamp
+  for (const e of events) {
+    if (reversedIds.has(e.eventId)) continue;
+    if (!e.lotNumber) continue;
+    const existing = seen.get(e.lotNumber);
+    if (!existing || e.timestamp > existing) {
+      seen.set(e.lotNumber, e.timestamp);
+    }
+  }
+  return [...seen.entries()]
+    .sort((a, b) => b[1].localeCompare(a[1]))
+    .slice(0, 5)
+    .map(([lot]) => lot);
 }
 
 // 全データをJSONエクスポート

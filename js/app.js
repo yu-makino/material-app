@@ -99,6 +99,18 @@ function showToast(message) {
   setTimeout(() => el.classList.remove('show'), 2500);
 }
 
+async function fillLastLot(materialId, targetInputOrSelector, afterFill) {
+  const lots = await getRecentLotNumbers(materialId);
+  if (lots.length === 0) { showToast('履歴がありません'); return; }
+  const input = typeof targetInputOrSelector === 'string'
+    ? document.querySelector(targetInputOrSelector)
+    : targetInputOrSelector;
+  if (input) {
+    input.value = lots[0];
+    if (afterFill) afterFill();
+  }
+}
+
 // ============================================
 // ホーム画面
 // ============================================
@@ -250,7 +262,10 @@ async function renderReceipt() {
       <div class="card card-padded">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">
           <label class="form-label" style="margin-bottom:0">ロット番号</label>
-          <button class="btn-same-lot" onclick="receiptFillAllLots()" id="r-same-btn" style="display:none">全て同じ</button>
+          <div style="display:flex; gap:8px">
+            <button class="btn-same-lot" onclick="fillLastLot(wizardState.materialId, '#r-lot-fields input[data-lot-index=&quot;0&quot;]', receiptLotInput)">前回</button>
+            <button class="btn-same-lot" onclick="receiptFillAllLots()" id="r-same-btn" style="display:none">全て同じ</button>
+          </div>
         </div>
         <div id="r-lot-fields">
           <div class="form-group">
@@ -427,7 +442,10 @@ async function renderMixing() {
       <div class="step-label"><span class="step-number">4</span>計量値を入力</div>
       <div class="card card-padded">
         <div class="form-group">
-          <label class="form-label">ロット番号</label>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px">
+            <label class="form-label" style="margin-bottom:0">ロット番号</label>
+            <button class="btn-same-lot" onclick="fillLastLot(wizardState.materialId, '#m-lot')">前回</button>
+          </div>
           <input type="text" class="form-input form-input-lot" id="m-lot" placeholder="ロット番号">
         </div>
         <div class="form-group">
