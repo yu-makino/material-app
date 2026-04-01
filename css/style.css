@@ -67,6 +67,7 @@ html, body {
   color: var(--text);
   font-size: 16px;
   overscroll-behavior: none;
+  touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
