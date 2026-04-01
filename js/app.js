@@ -213,7 +213,7 @@ function renderHomeWidgets(summary, inventory) {
 // ============================================
 
 async function renderReceipt() {
-  wizardState = { step: 1, materialId: null, lotNumber: '', quantity: 1 };
+  wizardState = { step: 1, materialId: null, spanId: null, lotNumber: '', quantity: 1 };
   const materials = await getMaterials();
 
   const el = document.getElementById('screen-receipt');
@@ -222,6 +222,7 @@ async function renderReceipt() {
       <div class="progress-segment current" id="rp1"></div>
       <div class="progress-segment" id="rp2"></div>
       <div class="progress-segment" id="rp3"></div>
+      <div class="progress-segment" id="rp4"></div>
     </div>
 
     <div class="wizard-step active" id="rs1">
@@ -236,7 +237,16 @@ async function renderReceipt() {
     </div>
 
     <div class="wizard-step" id="rs2">
-      <div class="step-label"><span class="step-number">2</span>数量・ロット番号</div>
+      <div class="step-label"><span class="step-number">2</span>径間を選択</div>
+      <div class="select-grid">
+        ${SPANS.map(s => `
+          <button class="select-btn" style="font-size:14px" onclick="receiptSelectSpan('${s}', this)">${s}</button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="wizard-step" id="rs3">
+      <div class="step-label"><span class="step-number">3</span>数量・ロット番号</div>
       <div class="card card-padded">
         <div class="form-group">
           <label class="form-label">数量</label>
@@ -267,8 +277,8 @@ async function renderReceipt() {
       <button class="btn btn-accent mt-16" onclick="receiptToConfirm()">確認へ</button>
     </div>
 
-    <div class="wizard-step" id="rs3">
-      <div class="step-label"><span class="step-number">3</span>確認</div>
+    <div class="wizard-step" id="rs4">
+      <div class="step-label"><span class="step-number">4</span>確認</div>
       <div class="confirm-card" id="r-confirm"></div>
       <button class="btn btn-success" onclick="receiptSubmit()">登録する</button>
       <button class="btn btn-ghost mt-8" onclick="renderReceipt()">やり直す</button>
@@ -283,10 +293,19 @@ async function receiptSelectMat(id, btn) {
 
   const mats = await getMaterials();
   const mat = mats.find(m => m.id === id);
+  if (mat) wizardState.unit = mat.unit;
+
+  setTimeout(() => wizardAdvance('rs', 'rp', 1, 2), 180);
+}
+
+function receiptSelectSpan(span, btn) {
+  wizardState.spanId = span;
+  document.querySelectorAll('#rs2 .select-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
 
   setTimeout(() => {
-    wizardAdvance('rs', 'rp', 1, 2);
-    if (mat) document.getElementById('r-unit').textContent = mat.unit;
+    wizardAdvance('rs', 'rp', 2, 3);
+    if (wizardState.unit) document.getElementById('r-unit').textContent = wizardState.unit;
   }, 180);
 }
 
@@ -360,6 +379,7 @@ async function receiptToConfirm() {
   document.getElementById('r-confirm').innerHTML = `
     <div class="confirm-title">登録内容</div>
     <div class="confirm-row"><span class="confirm-row-label">材料</span><span class="confirm-row-value">${mat.name}</span></div>
+    <div class="confirm-row"><span class="confirm-row-label">径間</span><span class="confirm-row-value">${wizardState.spanId}</span></div>
     <div class="confirm-row"><span class="confirm-row-label">合計数量</span><span class="confirm-row-value">${wizardState.quantity} ${mat.unit}</span></div>
     <div style="border-top:0.5px solid var(--separator); margin-top:8px; padding-top:8px">
       <div style="font-size:15px; color:var(--text-sub); font-weight:600; letter-spacing:0.5px; margin-bottom:8px;">ロット内訳</div>
@@ -367,7 +387,7 @@ async function receiptToConfirm() {
     </div>
   `;
 
-  wizardAdvance('rs', 'rp', 2, 3);
+  wizardAdvance('rs', 'rp', 3, 4);
 }
 
 async function receiptSubmit() {
@@ -376,7 +396,7 @@ async function receiptSubmit() {
   wizardState.lots.forEach(l => { lotCount[l] = (lotCount[l] || 0) + 1; });
 
   for (const [lot, count] of Object.entries(lotCount)) {
-    await addReceiptEvent(wizardState.materialId, lot, count, '足場内');
+    await addReceiptEvent(wizardState.materialId, lot, count, '足場内', wizardState.spanId);
   }
   showToast(`${wizardState.quantity}件の搬入を登録しました`);
   navigateTo('home');
@@ -531,14 +551,14 @@ async function mixSubmit() {
 // ============================================
 
 // 作業コンテキスト（セッション中保持）
-let usageContext = { spanId: null, process: null };
+let usageContext = { spanId: null };
 
 async function renderUsage() {
   const inventory = await getInventory();
   const el = document.getElementById('screen-usage');
 
   // コンテキスト未設定なら設定画面を出す
-  if (!usageContext.spanId || !usageContext.process) {
+  if (!usageContext.spanId) {
     renderUsageContext();
     return;
   }
@@ -546,7 +566,7 @@ async function renderUsage() {
   // アクティブな材料（残数 > 0のロット）を一覧表示
   let html = `
     <div class="usage-context-bar" onclick="renderUsageContext()">
-      <span>${usageContext.spanId}　${usageContext.process}</span>
+      <span>${usageContext.spanId}</span>
       <span class="action-chevron">変更 ›</span>
     </div>
   `;
@@ -590,28 +610,14 @@ async function renderUsage() {
 function renderUsageContext() {
   const el = document.getElementById('screen-usage');
   el.innerHTML = `
-    <div class="screen-title">作業コンテキスト</div>
+    <div class="screen-title">径間を選択</div>
 
-    <div class="section-title">径間</div>
     <div class="select-grid mb-16">
       ${SPANS.map(s => `
         <button class="select-btn ${usageContext.spanId === s ? 'selected' : ''}" style="font-size:14px"
                 onclick="usageSetSpan('${s}', this)">${s}</button>
       `).join('')}
     </div>
-
-    <div class="section-title">工程</div>
-    <div class="select-list mb-16">
-      ${PROCESSES.map(p => `
-        <button class="select-btn ${usageContext.process === p ? 'selected' : ''}"
-                onclick="usageSetProcess('${p}', this)">${p}</button>
-      `).join('')}
-    </div>
-
-    <button class="btn btn-accent mt-16" id="usage-context-ok" onclick="usageContextDone()"
-            ${!usageContext.spanId || !usageContext.process ? 'disabled' : ''}>
-      設定して材料一覧へ
-    </button>
   `;
 }
 
@@ -619,29 +625,12 @@ function usageSetSpan(span, btn) {
   usageContext.spanId = span;
   document.querySelectorAll('#screen-usage .select-grid .select-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  usageCheckContextReady();
-}
-
-function usageSetProcess(proc, btn) {
-  usageContext.process = proc;
-  document.querySelectorAll('#screen-usage .select-list .select-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  usageCheckContextReady();
-}
-
-function usageCheckContextReady() {
-  const okBtn = document.getElementById('usage-context-ok');
-  if (okBtn) okBtn.disabled = !(usageContext.spanId && usageContext.process);
-}
-
-function usageContextDone() {
-  if (!usageContext.spanId || !usageContext.process) return;
-  renderUsage();
+  setTimeout(() => renderUsage(), 180);
 }
 
 // 空缶ボタン — ワンタップで1単位使用記録
 async function usageMarkEmpty(materialId, lotNumber, quantity, unit) {
-  await addUsageEvent(materialId, lotNumber, quantity, usageContext.spanId, usageContext.process);
+  await addUsageEvent(materialId, lotNumber, quantity, usageContext.spanId, null);
   showToast(`${lotNumber} × ${quantity}${unit} 使用記録`);
   renderUsage(); // 画面を更新（残数が減る）
 }
@@ -686,7 +675,7 @@ function usagePartialQty(d, max) {
 
 async function usagePartialSubmit(materialId, lotNumber) {
   const qty = parseInt(document.getElementById('partial-qty').textContent);
-  await addUsageEvent(materialId, lotNumber, qty, usageContext.spanId, usageContext.process);
+  await addUsageEvent(materialId, lotNumber, qty, usageContext.spanId, null);
   usagePartialClose();
   showToast(`${lotNumber} × ${qty} 使用記録`);
   renderUsage();

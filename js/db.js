@@ -245,13 +245,14 @@ async function addEvent(event) {
 }
 
 // 搬入イベント
-async function addReceiptEvent(materialId, lotNumber, quantity, location, notes) {
+async function addReceiptEvent(materialId, lotNumber, quantity, location, spanId, notes) {
   return addEvent({
     type: 'receipt',
     materialId,
     lotNumber,
     quantity: Number(quantity),
     location: location || '足場内',
+    spanId: spanId || null,
     notes: notes || ''
   });
 }
